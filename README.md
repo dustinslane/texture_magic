@@ -27,6 +27,10 @@ Texture magic is a handy tool to quickly crop and trim textures, scale and compr
 .NET 6.0 is required. You may already have this installed. If you don't, you can get it here:\
  [https://dotnet.microsoft.com/en-us/download/dotnet/6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 
+## Disclaimer
+
+This software is distributed free of charge, as-is, without any warranty. May it help you resize textures.
+
 ## Download
 
 [Find the latest release here](https://github.com/dustinslane/texture_magic/releases/latest). Download the ZIP file and extract where convenient. Run the program.
