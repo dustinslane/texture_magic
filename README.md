@@ -12,6 +12,12 @@ Texture magic is a handy tool to quickly crop and trim textures, scale and compr
 
 ## Screenshots
 ![An image of the application.](img/app.png)
+
+### Example
+#### Before
+![Before image](img/before.png)
+#### After
+![After image](img/after.png)
  
 ## System Requirements:
 
