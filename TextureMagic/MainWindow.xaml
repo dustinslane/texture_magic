@@ -9,7 +9,8 @@
     <Grid HorizontalAlignment="Stretch">
         <StackPanel Orientation="Vertical" Margin="8,8,8,8" HorizontalAlignment="Stretch">
             <TextBlock FontSize="48" FontWeight="Bold">Texture Magic</TextBlock>
-            <TextBlock Margin="0,0,0,32" FontStyle="Italic" >Automatic .dds trimming and rescaling by Dustin Slane</TextBlock>
+            <TextBlock Margin="0,0,0,8" FontStyle="Italic" >Automatic .dds trimming and rescaling by Dustin Slane</TextBlock>
+            <TextBlock Margin="0,0,0, 24" FontStyle="Italic" ><Hyperlink NavigateUri="https://streamelements.com/dustin_slane/tip" RequestNavigate="Hyperlink_RequestNavigate">✨ Support me if you like this program! ✨</Hyperlink></TextBlock>
             <Button Name="FilePickerButton" Content="Select files..." HorizontalAlignment="Stretch" Click="Button_Click"/>
             <TextBlock Name="SelectedPath" Margin="0,0,0,8" >C:\Program Files</TextBlock>
             <TextBlock x:Name="FilesFound" Margin="0,0,0,8" >0 Files Found</TextBlock>
