@@ -36,7 +36,7 @@ This software is distributed free of charge, as-is, without any warranty. May it
 [Find the latest release here](https://github.com/dustinslane/texture_magic/releases/latest). Download the ZIP file and extract where convenient. Run the program.
 
 ## Support me
-If you like this program
+If you like this program, please [support me here so I can dedicate time to projects like this!](https://streamelements.com/dustin_slane/tip)
 
 ## Usage
 
