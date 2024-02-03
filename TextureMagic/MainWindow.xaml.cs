@@ -78,7 +78,7 @@ namespace TextureMagic
         {
             var filepicker = new OpenFileDialog();
             filepicker.Multiselect = true;
-            filepicker.Filter = "Texture Files (*.dds, *.ytd)|*.dds;*.ytd";
+            filepicker.Filter = "Texture Files (*.png, *.dds, *.ytd)|*.png;*.dds;*.ytd";
             filepicker.InitialDirectory = string.IsNullOrEmpty(_lastPath)? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : _lastPath;
 
             if (filepicker.ShowDialog() == true)
@@ -231,10 +231,16 @@ namespace TextureMagic
             try
             {
                 if (t.IsCancellationRequested) return;
-                if (entry.Path.EndsWith(".dds"))
+
+                string path = entry.Path.ToLowerInvariant();
+
+                if (path.EndsWith(".png"))
                 {
                     await ProcessDds(entry);
-                } else if (entry.Path.EndsWith(".ytd"))
+                } else if (path.EndsWith(".dds"))
+                {
+                    await ProcessDds(entry);
+                } else if (path.EndsWith(".ytd"))
                 {
                     await ProcessYtd(entry);
                 }
