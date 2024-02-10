@@ -497,9 +497,13 @@ namespace TextureMagic
 
         private void ResolutionPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
             var selected = (ComboBoxItem)this.ResolutionPicker.SelectedValue;
             _selectedResolition = Convert.ToInt32(selected.Content);
+
+            if (_squareTexture && this.ResolutionPickerHeight != null)
+            {
+                ResolutionPickerHeight.SelectedIndex = ResolutionPicker.SelectedIndex;
+            }
         }
 
         private void CompressionPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
