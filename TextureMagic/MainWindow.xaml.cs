@@ -268,6 +268,7 @@ namespace TextureMagic
                     var dds = DDSIO.GetDDSFile(texture);
                     var image = ProcessImage(new MagickImage(dds), Path.GetFileName(entry.Path));
                     var editedTexture = DDSIO.GetTexture(image.ToByteArray());
+                    editedTexture.Name = texture.Name;
                     editedTextures.Add(editedTexture);
                 }
                 
