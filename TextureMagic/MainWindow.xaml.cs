@@ -55,7 +55,7 @@ namespace TextureMagic
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.6.0 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.6.1 )"; 
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
