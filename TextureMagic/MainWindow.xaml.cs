@@ -55,7 +55,7 @@ namespace TextureMagic
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.6.1 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.6.2 )"; 
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
@@ -236,7 +236,7 @@ namespace TextureMagic
 
                 if (path.EndsWith(".png"))
                 {
-                    await ProcessDds(entry);
+                    await ProcessPng(entry);
                 } else if (path.EndsWith(".dds"))
                 {
                     await ProcessDds(entry);
@@ -274,6 +274,24 @@ namespace TextureMagic
                 
                 ytd.Rebuild(editedTextures);
                 await ytd.SaveToDisk();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+
+        private async Task ProcessPng(FileEntry entry)
+        {
+            try
+            {
+                var openedFile = await File.ReadAllBytesAsync(entry.Path);
+                var img = new MagickImage(openedFile, MagickFormat.Png);
+                img.Format = MagickFormat.Dds;
+                using var imageFromFile = ProcessImage(img, Path.GetFileName(entry.Path));
+                await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds", imageFromFile.ToByteArray());
             }
             catch (Exception e)
             {
