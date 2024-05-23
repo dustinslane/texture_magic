@@ -24,8 +24,8 @@ Texture magic is a handy tool to quickly crop and trim textures, scale and compr
 ✅ Windows 10 or Windows 11, 64 bit operating system required.\
 ❌ Windows 8.1, Windows 7, Linux/Mac or 32-bit not supported.
 
-.NET 6.0 is required. You may already have this installed. If you don't, you can get it here:\
- [https://dotnet.microsoft.com/en-us/download/dotnet/6.0](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
+.NET 8.0 is required. You may already have this installed. If you don't, you can get it here:\
+ [https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
 ## Disclaimer
 
