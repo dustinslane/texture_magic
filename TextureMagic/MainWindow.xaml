@@ -14,6 +14,7 @@
             <Button Name="FilePickerButton" Content="Select files..." HorizontalAlignment="Stretch" Click="Button_Click"/>
             <TextBlock Name="SelectedPath" Margin="0,0,0,8" >C:\Program Files</TextBlock>
             <TextBlock x:Name="FilesFound" Margin="0,0,0,8" >0 Files Found</TextBlock>
+            <CheckBox x:Name="ExportDdsFromYtd" IsChecked="False" Visibility="Collapsed" HorizontalAlignment="Left" Content="Export DDS" Margin="0,0,0,8" Checked="ExportDds_Checked" Unchecked="ExportDds_Unchecked" />
             <CheckBox x:Name="FillBackgroundCheckBox" IsChecked="True" HorizontalAlignment="Left" Content="Fill background with color" Margin="0,0,0,8" Checked="FillBackgroundCheckBox_Checked" Unchecked="FillBackgroundCheckBox_Unchecked" />
             <TextBlock Name="TextureBorderText" Margin="0,0,0,0" >Texture Border:</TextBlock>
             <ComboBox x:Name="TextureBorderComboBox" SelectedIndex="0" HorizontalAlignment="Stretch" Margin="0,0,0,8" SelectionChanged="TextureBorderComboBox_SelectionChanged" Background="#FF202020">
@@ -22,7 +23,7 @@
                 <ComboBoxItem Content="32 Pixels" x:Name="x32"></ComboBoxItem>
                 <ComboBoxItem Content="64 Pixels" x:Name="x64"></ComboBoxItem>
             </ComboBox>
-            <CheckBox x:Name="RearrangeTextureCheckbox" HorizontalAlignment="Left" Content="Rearrange Texture: optimize space" Margin="0,0,0,8" Unchecked="RearrangeCheckbox_Unchecked" Checked="RearrangeCheckbox_Checked" />
+            <!-- <CheckBox x:Name="RearrangeTextureCheckbox" HorizontalAlignment="Left" Content="Rearrange Texture: optimize space" Margin="0,0,0,8" Unchecked="RearrangeCheckbox_Unchecked" Checked="RearrangeCheckbox_Checked" /> -->
             <CheckBox x:Name="SquareCheckbox" IsChecked="True" HorizontalAlignment="Left" Content="Square Texture" Margin="0,0,0,8" Checked="SquareTextureCheckBox_Checked" Unchecked="SquareTextureCheckBox_Unchecked" />
 
             <TextBlock Name="ResolutionWidthText" Margin="0,0,0,0" >Width:</TextBlock>

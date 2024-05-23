@@ -45,17 +45,24 @@ namespace TextureMagic
         private FileEntry[] _files = Array.Empty<FileEntry>();
         private readonly BackgroundWorker _worker = new BackgroundWorker();
         private int _textureBorder = 0;
+        private bool ExportYtdToDds = false;
 
         struct FileEntry
         {
             public int Index { get; set; }
             public string Path { get; set; }
+            public FileType FileType { get; set; }
+        }
+
+        enum FileType
+        {
+            Unknown, Png, Ytd, Dds
         }
         
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.6.2 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.7.0 )"; 
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
@@ -89,20 +96,37 @@ namespace TextureMagic
                     _files[i] = new FileEntry
                     {
                         Index = i,
-                        Path = filepicker.FileNames[i]
+                        Path = filepicker.FileNames[i],
+                        FileType = GetTypeOfFile(filepicker.FileNames[i])
                     };
                 }
                 if (_files.Length > 0)
                 {
                     _lastPath = Path.GetDirectoryName(_files[0].Path) ?? filepicker.InitialDirectory;
+                    ExportDdsFromYtd.Visibility = ShouldShowDdsExportButton();
                 }
                 else
                 {
                     _lastPath = "Operation cancelled.";
+                    ExportDdsFromYtd.Visibility = Visibility.Hidden;
                 }
                 SelectedPath.Text = _lastPath;
 
             }
+        }
+
+        private Visibility ShouldShowDdsExportButton()
+        {
+            return _files.Any(f => f.Path.EndsWith(".ytd")) ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private FileType GetTypeOfFile(string path)
+        {
+            if (path.EndsWith(".png")) return FileType.Png;
+            if (path.EndsWith(".ytd")) return FileType.Ytd;
+            if (path.EndsWith(".dds")) return FileType.Dds;
+
+            return FileType.Unknown;
         }
 
         private void FilesFound_SelectionChanged(object sender, RoutedEventArgs e)
@@ -125,9 +149,6 @@ namespace TextureMagic
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             // _dispatcher = Window.Current.Dispatcher;
-
-            
-
             if (_isWorking)
             {
                 _cancellationTokenSource.Cancel();
@@ -234,18 +255,27 @@ namespace TextureMagic
 
                 string path = entry.Path.ToLowerInvariant();
 
-                if (path.EndsWith(".png"))
+                switch (entry.FileType)
                 {
-                    await ProcessPng(entry);
-                } else if (path.EndsWith(".dds"))
-                {
-                    await ProcessDds(entry);
-                } else if (path.EndsWith(".ytd"))
-                {
-                    await ProcessYtd(entry);
+                    case FileType.Png:
+                        await ProcessPng(entry);
+                        break;
+                    case FileType.Ytd:
+                        await ProcessYtd(entry);
+                        break;
+                    case FileType.Dds:
+                        await ProcessDds(entry);
+                        break;
+                    default:
+                        Dispatcher.Invoke(() =>
+                        {
+                            _ = MessageBox.Show($"You rolled a nat 1! \n\n" + 
+                                                "Unknown File Type"
+                                                + "\n\n" + "",
+                                "WILD MAGIC!", MessageBoxButton.OK, MessageBoxImage.Error);
+                        });
+                        break;
                 }
-                
-                
             }
             catch (Exception e)
             {
@@ -267,6 +297,12 @@ namespace TextureMagic
                 {
                     var dds = DDSIO.GetDDSFile(texture);
                     var image = ProcessImage(new MagickImage(dds), Path.GetFileName(entry.Path));
+                    
+                    if (ExportYtdToDds)
+                    {
+                        await SaveDdsToFile(entry, image);
+                    }
+                    
                     var editedTexture = DDSIO.GetTexture(image.ToByteArray());
                     editedTexture.Name = texture.Name;
                     editedTextures.Add(editedTexture);
@@ -291,7 +327,7 @@ namespace TextureMagic
                 var img = new MagickImage(openedFile, MagickFormat.Png);
                 img.Format = MagickFormat.Dds;
                 using var imageFromFile = ProcessImage(img, Path.GetFileName(entry.Path));
-                await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds", imageFromFile.ToByteArray());
+                await SaveDdsToFile(entry, imageFromFile);
             }
             catch (Exception e)
             {
@@ -306,7 +342,7 @@ namespace TextureMagic
             {
                 var openedFile = await File.ReadAllBytesAsync(entry.Path);
                 using var imageFromFile = ProcessImage(new MagickImage(openedFile), Path.GetFileName(entry.Path));
-                await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds", imageFromFile.ToByteArray());
+                await SaveDdsToFile(entry, imageFromFile);
             }
             catch (Exception e)
             {
@@ -344,6 +380,11 @@ namespace TextureMagic
             processedImage.Extent(_selectedResolition, height, Gravity.Center, color);
 
             return processedImage;
+        }
+
+        private async Task SaveDdsToFile(FileEntry entry, IMagickImage image)
+        {
+            await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds", image.ToByteArray());
         }
 
         private MagickImage NormalOptimization(MagickImage img, string name)
@@ -605,6 +646,16 @@ namespace TextureMagic
                 UseShellExecute = true
             });
             e.Handled = true;
+        }
+
+        private void ExportDds_Checked(object sender, RoutedEventArgs e)
+        {
+            ExportYtdToDds = true;
+        }
+
+        private void ExportDds_Unchecked(object sender, RoutedEventArgs e)
+        {
+            ExportYtdToDds = false;
         }
     }
 }
