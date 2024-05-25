@@ -38,7 +38,7 @@ namespace TextureMagic
         private static readonly MagickColor _backgroundColor = new MagickColor(0x1f, 0x20, 0x20, 0xff);
         private bool _squareTexture = true;
         private MagickGeometry[] _geometry;
-        private List<IConnectedComponent<byte>> _connectedComponents = new ();
+        private List<IConnectedComponent<byte>> _connectedComponents = new();
         private IMagickImage[] _masks;
         private CancellationTokenSource _cancellationTokenSource;
         private CompressionMethod _selectedCompression = CompressionMethod.DXT1;
@@ -46,6 +46,10 @@ namespace TextureMagic
         private readonly BackgroundWorker _worker = new BackgroundWorker();
         private int _textureBorder = 0;
         private bool ExportYtdToDds = false;
+        private int __width = 0;
+        private int __height = 0;
+        private int __newWidth = 0;
+        private int __newHeight = 0;
 
         struct FileEntry
         {
@@ -56,20 +60,24 @@ namespace TextureMagic
 
         enum FileType
         {
-            Unknown, Png, Ytd, Dds
+            Unknown,
+            Png,
+            Ytd,
+            Dds,
+            Xml
         }
-        
+
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.7.0 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.7.0 )";
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
             _worker.RunWorkerCompleted += RunWorkerCompleted;
             _worker.WorkerSupportsCancellation = true;
         }
-        
+
         private void RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
         {
 
@@ -85,8 +93,10 @@ namespace TextureMagic
         {
             var filepicker = new OpenFileDialog();
             filepicker.Multiselect = true;
-            filepicker.Filter = "Texture Files (*.png, *.dds, *.ytd)|*.png;*.dds;*.ytd";
-            filepicker.InitialDirectory = string.IsNullOrEmpty(_lastPath)? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) : _lastPath;
+            filepicker.Filter = "Texture Files (*.png, *.dds, *.ytd, *.xml)|*.png;*.dds;*.ytd;*.xml";
+            filepicker.InitialDirectory = string.IsNullOrEmpty(_lastPath)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+                : _lastPath;
 
             if (filepicker.ShowDialog() == true)
             {
@@ -100,6 +110,7 @@ namespace TextureMagic
                         FileType = GetTypeOfFile(filepicker.FileNames[i])
                     };
                 }
+
                 if (_files.Length > 0)
                 {
                     _lastPath = Path.GetDirectoryName(_files[0].Path) ?? filepicker.InitialDirectory;
@@ -110,6 +121,7 @@ namespace TextureMagic
                     _lastPath = "Operation cancelled.";
                     ExportDdsFromYtd.Visibility = Visibility.Hidden;
                 }
+
                 SelectedPath.Text = _lastPath;
 
             }
@@ -125,6 +137,7 @@ namespace TextureMagic
             if (path.EndsWith(".png")) return FileType.Png;
             if (path.EndsWith(".ytd")) return FileType.Ytd;
             if (path.EndsWith(".dds")) return FileType.Dds;
+            if (path.EndsWith(".xml")) return FileType.Xml;
 
             return FileType.Unknown;
         }
@@ -176,7 +189,7 @@ namespace TextureMagic
             _totalProgress = _files.Length;
             _isWorking = true;
             SetJobTarget(_files.Length);
-            
+
             // Limit to MAX_THREADS because while taking over the whole processor is *fast*.... I would be
             // taking over the whole processor and using this while you have OBS going is... challenging.
             var opts = new ParallelOptions();
@@ -191,7 +204,12 @@ namespace TextureMagic
 
             try
             {
-                await Parallel.ForEachAsync(_files, opts, ProcessFile);
+                
+                await Parallel.ForEachAsync(_files.Where(f => f.FileType != FileType.Xml), opts, ProcessFile);
+                foreach (var file in _files.Where(f => f.FileType == FileType.Xml))
+                {
+                    await ProcessFile(file, _cancellationTokenSource.Token);
+                }
                 Dispatcher.Invoke(() =>
                 {
                     _ = MessageBox.Show($"Optimized {_currentProgress} textures!", "Texture Magic has finished!",
@@ -232,7 +250,7 @@ namespace TextureMagic
             _totalProgress = count;
             _currentProgress = 0;
         }
-        
+
         private void MarkJobDone()
         {
             lock (progressLock)
@@ -253,8 +271,6 @@ namespace TextureMagic
             {
                 if (t.IsCancellationRequested) return;
 
-                string path = entry.Path.ToLowerInvariant();
-
                 switch (entry.FileType)
                 {
                     case FileType.Png:
@@ -266,10 +282,13 @@ namespace TextureMagic
                     case FileType.Dds:
                         await ProcessDds(entry);
                         break;
+                    case FileType.Xml:
+                        ProcessXml(entry);
+                        break;
                     default:
                         Dispatcher.Invoke(() =>
                         {
-                            _ = MessageBox.Show($"You rolled a nat 1! \n\n" + 
+                            _ = MessageBox.Show($"You rolled a nat 1! \n\n" +
                                                 "Unknown File Type"
                                                 + "\n\n" + "",
                                 "WILD MAGIC!", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -282,6 +301,7 @@ namespace TextureMagic
                 Console.WriteLine(e);
                 throw;
             }
+
             MarkJobDone();
         }
 
@@ -297,17 +317,17 @@ namespace TextureMagic
                 {
                     var dds = DDSIO.GetDDSFile(texture);
                     var image = ProcessImage(new MagickImage(dds), Path.GetFileName(entry.Path));
-                    
+
                     if (ExportYtdToDds)
                     {
                         await SaveDdsToFile(entry, image);
                     }
-                    
+
                     var editedTexture = DDSIO.GetTexture(image.ToByteArray());
                     editedTexture.Name = texture.Name;
                     editedTextures.Add(editedTexture);
                 }
-                
+
                 ytd.Rebuild(editedTextures);
                 await ytd.SaveToDisk();
             }
@@ -350,9 +370,25 @@ namespace TextureMagic
                 throw;
             }
         }
-        
+
+        private void ProcessXml(FileEntry entry)
+        {
+            var cwxml = new CodeWalkerXml(entry.Path);
+            try
+            {
+                cwxml.Load(__height, __width, __newHeight, __width);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+        }
+
         private IMagickImage ProcessImage(MagickImage img, string name)
         {
+            __height = img.Height;
+            __width = img.Width;
+            
             MagickImage processedImage;
             if (_rearrangeTexture)
             {
@@ -364,7 +400,7 @@ namespace TextureMagic
                 SetStatus($"Optimizing {name}");
                 processedImage = NormalOptimization(img, name);
             }
-            
+
             processedImage.Settings.Compression = _selectedCompression;
             MagickColor color;
             if (_fillBackGround)
@@ -379,17 +415,22 @@ namespace TextureMagic
             int height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
             processedImage.Extent(_selectedResolition, height, Gravity.Center, color);
 
+            __newHeight = processedImage.Height;
+            __newWidth = processedImage.Width;
+            
             return processedImage;
         }
 
         private async Task SaveDdsToFile(FileEntry entry, IMagickImage image)
         {
-            await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds", image.ToByteArray());
+            await File.WriteAllBytesAsync($"{Path.GetDirectoryName(entry.Path)}\\{entry.Index}.dds",
+                image.ToByteArray());
         }
 
         private MagickImage NormalOptimization(MagickImage img, string name)
         {
             MagickGeometry res;
+            IMagickGeometry? boundingBox;
             int height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
             if (img.Height > img.Width)
             {
@@ -405,23 +446,26 @@ namespace TextureMagic
                     Width = _selectedResolition
                 };
             }
-            
+
             if (_textureBorder == 0)
             {
                 img.Trim();
+                boundingBox = img.BoundingBox;
                 img.Scale(res);
             }
             else
             {
                 // Trim the image to it's extents
                 img.Trim();
+                
+                boundingBox = img.BoundingBox;
                 // Add a little border around the image of 16 px
                 img.BorderColor = _backgroundColor;
                 img.Border(_textureBorder, _textureBorder);
                 // Scale the image down
                 img.Scale(res);
             }
-            
+
             if (img.Height > _selectedResolutionHeight)
             {
                 img.Scale(new MagickGeometry()
@@ -429,6 +473,7 @@ namespace TextureMagic
                     Height = _selectedResolutionHeight,
                 });
             }
+
             if (img.Width > _selectedResolition)
             {
                 img.Scale(new MagickGeometry()
@@ -441,33 +486,35 @@ namespace TextureMagic
             {
                 img.BackgroundColor = _backgroundColor;
             }
+
             return img;
         }
- 
+
         private MagickImage CutImageIntoPieces(MagickImage img, string imageName)
         {
             // Last resort
             using var clone = img.Clone();
 
-            var pixel = clone.GetPixels().GetPixel(1,1);
+            var pixel = clone.GetPixels().GetPixel(1, 1);
             var col = pixel.ToColor();
             if (col != null && col.A > 0)
             {
                 clone.ColorFuzz = new Percentage(5);
                 clone.Transparent(col);
             }
+
             clone.Alpha(AlphaOption.Extract);
             clone.Threshold(new Percentage(10));
             clone.Negate();
-            
+
             var opts = new ConnectedComponentsSettings
             {
                 Connectivity = 4,
                 // AreaThreshold = new Threshold(2048)
             };
-     
+
             using var masked = new MagickImageCollection();
-            
+
             // ONLY run this once
             lock (_geometryLock)
             {
@@ -481,7 +528,8 @@ namespace TextureMagic
                     for (int index = 0; index < count; index++)
                     {
                         var component = _connectedComponents[index];
-                        _geometry[index] = new MagickGeometry(component.X, component.Y, component.Width, component.Height);
+                        _geometry[index] =
+                            new MagickGeometry(component.X, component.Y, component.Width, component.Height);
                         var mask = clone.Clone();
                         mask.FloodFill(MagickColors.White, (int)component.Centroid.X, (int)component.Centroid.Y);
                         mask.Threshold(new Percentage(50));
@@ -499,20 +547,20 @@ namespace TextureMagic
             {
                 var component = _connectedComponents[index];
                 if (component.Id == 0) continue; // Do not grab the whole image
-            
+
                 var geometry = _geometry[index];
-            
+
                 using var copy = img.Clone();
                 copy.Crop(geometry);
                 copy.RePage();
-            
+
                 var item = new MagickImage(MagickColors.Transparent, img.Width, img.Height);
                 item.Format = MagickFormat.Dds;
                 item.Crop(geometry);
                 item.RePage();
                 item.SetWriteMask(_masks[index]);
                 item.Composite(copy, CompositeOperator.Over);
-            
+
                 masked.Add(item);
             }
 
@@ -523,9 +571,9 @@ namespace TextureMagic
                 Geometry = new MagickGeometry(5, 5, 0, 0),
                 BackgroundColor = _fillBackGround ? new MagickColor(0x20, 0x20, 0x20, 0xff) : MagickColors.Transparent
             };
-            
+
             using var montage = masked.Montage(montageSettings);
-            
+
             montage.RePage();
 
             if (_textureBorder == 0)
@@ -533,14 +581,14 @@ namespace TextureMagic
                 montage.BorderColor = montage.BackgroundColor;
                 montage.Border((int)(montage.Width * 0.01), (int)(montage.Height * 0.01));
             }
-            
+
             var res = new MagickGeometry
             {
                 Width = _selectedResolition
             };
-            
+
             montage.Scale(res);
-            
+
             // montage.Extent(_selectedResolition, _selectedResolition, Gravity.Center);
 
             return new MagickImage(montage);
@@ -638,7 +686,7 @@ namespace TextureMagic
                     break;
             }
         }
-        
+
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {
             Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
@@ -657,5 +705,7 @@ namespace TextureMagic
         {
             ExportYtdToDds = false;
         }
+
+         
     }
 }
