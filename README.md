@@ -48,7 +48,7 @@ This list will go through the steps, and down the list of things on the screen.
    - Example: only textures for `jbib_023.ydd`
 3. Decide if you want a background color. It is gray. `#1F2020`.
 4. Decide if you want a border around your texture. Select one from the dropdown.
-5. (EXPERIMENTAL) You can have the program attempt to rearrange your texture in a more optimized arrangement. This probably won't work but it might?
+5. ~~(EXPERIMENTAL) You can have the program attempt to rearrange your texture in a more optimized arrangement. This probably won't work but it might?~~
 6. Decide if the texture is square. Some textures (shoes) won't be.
 7. Set the width you want.
 8. If not square, set the height here.
