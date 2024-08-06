@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Navigation;
 using CodeWalker.GameFiles;
 using CodeWalker.Utils;
+using ColorPicker.Models;
 using ImageMagick;
 using Microsoft.Win32;
 using Path = System.IO.Path;
@@ -35,7 +36,6 @@ namespace TextureMagic
         private int _currentProgress = 0;
         private string _lastPath;
         private bool _geometryInitialized = false;
-        private static readonly MagickColor _backgroundColor = new MagickColor(0x1f, 0x20, 0x20, 0xff);
         private bool _squareTexture = true;
         private MagickGeometry[] _geometry;
         private List<IConnectedComponent<byte>> _connectedComponents = new ();
@@ -46,6 +46,8 @@ namespace TextureMagic
         private readonly BackgroundWorker _worker = new BackgroundWorker();
         private int _textureBorder = 0;
         private bool ExportYtdToDds = false;
+
+        internal static SettingsStorage Settings;
 
         struct FileEntry
         {
@@ -62,12 +64,22 @@ namespace TextureMagic
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.7.0 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.8.0 )"; 
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
             _worker.RunWorkerCompleted += RunWorkerCompleted;
             _worker.WorkerSupportsCancellation = true;
+
+            Task.Run(async () =>
+            {
+                Settings = await SettingsStorage.Load();
+
+                backgroundColorPicker.Dispatcher.Invoke(() =>
+                {
+                    backgroundColorPicker.SelectedColor = Settings.BackgroundColor;
+                });
+            });
         }
         
         private void RunWorkerCompleted(object? sender, RunWorkerCompletedEventArgs e)
@@ -369,7 +381,7 @@ namespace TextureMagic
             MagickColor color;
             if (_fillBackGround)
             {
-                color = new MagickColor(0x20, 0x20, 0x20, 0xff);
+                color = Settings.BackgroundColorMagick;
             }
             else
             {
@@ -416,7 +428,7 @@ namespace TextureMagic
                 // Trim the image to it's extents
                 img.Trim();
                 // Add a little border around the image of 16 px
-                img.BorderColor = _backgroundColor;
+                img.BorderColor = Settings.BackgroundColorMagick;
                 img.Border(_textureBorder, _textureBorder);
                 // Scale the image down
                 img.Scale(res);
@@ -439,7 +451,7 @@ namespace TextureMagic
 
             if (_fillBackGround)
             {
-                img.BackgroundColor = _backgroundColor;
+                img.BackgroundColor = Settings.BackgroundColorMagick;
             }
             return img;
         }
@@ -521,7 +533,7 @@ namespace TextureMagic
             var montageSettings = new MontageSettings
             {
                 Geometry = new MagickGeometry(5, 5, 0, 0),
-                BackgroundColor = _fillBackGround ? new MagickColor(0x20, 0x20, 0x20, 0xff) : MagickColors.Transparent
+                BackgroundColor = _fillBackGround ? Settings.BackgroundColorMagick : MagickColors.Transparent
             };
             
             using var montage = masked.Montage(montageSettings);
@@ -656,6 +668,20 @@ namespace TextureMagic
         private void ExportDds_Unchecked(object sender, RoutedEventArgs e)
         {
             ExportYtdToDds = false;
+        }
+
+        private void PickerControlBase_OnColorChanged(object sender, RoutedEventArgs routedEventArgs)
+        {
+            var currentColor = backgroundColorPicker.SelectedColor;
+
+            Settings.BackgroundColor = currentColor;
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            base.OnClosing(e);
+
+            Task.Run(() => SettingsStorage.Save(Settings));
         }
     }
 }
