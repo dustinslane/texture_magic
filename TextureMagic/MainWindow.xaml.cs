@@ -30,13 +30,15 @@ namespace TextureMagic
         private bool _fillBackGround = false;
         private bool _rearrangeTexture = false;
         private bool _isWorking = false;
-        private int _selectedResolition = 512;
-        private int _selectedResolutionHeight = 512;
+        private uint _selectedResolition = 512;
+        private uint _selectedResolutionHeight = 512;
         private int _totalProgress = 0;
         private int _currentProgress = 0;
         private string _lastPath;
         private bool _geometryInitialized = false;
         private bool _squareTexture = true;
+        private bool _trimImage = false;
+        private bool _scaleImage = false;
         private MagickGeometry[] _geometry;
         private List<IConnectedComponent<byte>> _connectedComponents = new ();
         private IMagickImage[] _masks;
@@ -44,7 +46,7 @@ namespace TextureMagic
         private CompressionMethod _selectedCompression = CompressionMethod.DXT1;
         private FileEntry[] _files = Array.Empty<FileEntry>();
         private readonly BackgroundWorker _worker = new BackgroundWorker();
-        private int _textureBorder = 0;
+        private uint _textureBorder = 0;
         private bool ExportYtdToDds = false;
 
         internal static SettingsStorage Settings;
@@ -64,7 +66,7 @@ namespace TextureMagic
         public MainWindow()
         {
             this.InitializeComponent();
-            this.Title = "Texture Magic by Dustin Slane ( v 0.8.0 )"; 
+            this.Title = "Texture Magic by Dustin Slane ( v 0.9.0 )"; 
             Progress.Value = 0;
             _cancellationTokenSource = new CancellationTokenSource();
             _worker.DoWork += WorkerOnDoWork;
@@ -378,7 +380,7 @@ namespace TextureMagic
             }
             
             processedImage.Settings.Compression = _selectedCompression;
-            MagickColor color;
+            IMagickColor<byte> color;
             if (_fillBackGround)
             {
                 color = Settings.BackgroundColorMagick;
@@ -388,9 +390,13 @@ namespace TextureMagic
                 color = new MagickColor(0x00, 0x00, 0x00, 0x00);
             }
 
-            int height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
-            processedImage.Extent(_selectedResolition, height, Gravity.Center, color);
-
+            if (_scaleImage || _trimImage)
+            {
+                uint height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
+                
+                processedImage.Extent(_selectedResolition, height, Gravity.Center, color);
+            }
+            
             return processedImage;
         }
 
@@ -401,8 +407,27 @@ namespace TextureMagic
 
         private MagickImage NormalOptimization(MagickImage img, string name)
         {
+            if (_trimImage)
+            {
+                TrimImage(img);
+            }
+
+            if (_scaleImage)
+            {
+                ScaleImageToSelectedResolution(img);
+            }
+            
+            if (_fillBackGround)
+            {
+                img.BackgroundColor = Settings.BackgroundColorMagick;
+            }
+            return img;
+        }
+
+        private void TrimImage(MagickImage img)
+        {
             MagickGeometry res;
-            int height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
+            uint height = _squareTexture ? _selectedResolition : _selectedResolutionHeight;
             if (img.Height > img.Width)
             {
                 res = new MagickGeometry()
@@ -417,11 +442,11 @@ namespace TextureMagic
                     Width = _selectedResolition
                 };
             }
-            
+                
             if (_textureBorder == 0)
             {
                 img.Trim();
-                img.Scale(res);
+                img.Scale(res);                   
             }
             else
             {
@@ -433,7 +458,10 @@ namespace TextureMagic
                 // Scale the image down
                 img.Scale(res);
             }
-            
+        }
+
+        private void ScaleImageToSelectedResolution(MagickImage img)
+        {
             if (img.Height > _selectedResolutionHeight)
             {
                 img.Scale(new MagickGeometry()
@@ -441,6 +469,7 @@ namespace TextureMagic
                     Height = _selectedResolutionHeight,
                 });
             }
+
             if (img.Width > _selectedResolition)
             {
                 img.Scale(new MagickGeometry()
@@ -448,14 +477,8 @@ namespace TextureMagic
                     Width = _selectedResolition,
                 });
             }
-
-            if (_fillBackGround)
-            {
-                img.BackgroundColor = Settings.BackgroundColorMagick;
-            }
-            return img;
         }
- 
+
         private MagickImage CutImageIntoPieces(MagickImage img, string imageName)
         {
             // Last resort
@@ -499,7 +522,7 @@ namespace TextureMagic
                         mask.Threshold(new Percentage(50));
                         mask.Negate();
                         mask.Crop(_geometry[index]);
-                        mask.RePage();
+                        mask.ResetPage();
                         _masks[index] = mask;
                     }
 
@@ -516,12 +539,12 @@ namespace TextureMagic
             
                 using var copy = img.Clone();
                 copy.Crop(geometry);
-                copy.RePage();
+                copy.ResetPage();
             
                 var item = new MagickImage(MagickColors.Transparent, img.Width, img.Height);
                 item.Format = MagickFormat.Dds;
                 item.Crop(geometry);
-                item.RePage();
+                item.ResetPage();
                 item.SetWriteMask(_masks[index]);
                 item.Composite(copy, CompositeOperator.Over);
             
@@ -538,12 +561,12 @@ namespace TextureMagic
             
             using var montage = masked.Montage(montageSettings);
             
-            montage.RePage();
+            montage.ResetPage();
 
             if (_textureBorder == 0)
             {
                 montage.BorderColor = montage.BackgroundColor;
-                montage.Border((int)(montage.Width * 0.01), (int)(montage.Height * 0.01));
+                montage.Border((uint)(montage.Width * 0.01), (uint)(montage.Height * 0.01));
             }
             
             var res = new MagickGeometry
@@ -570,7 +593,7 @@ namespace TextureMagic
         private void ResolutionPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selected = (ComboBoxItem)this.ResolutionPicker.SelectedValue;
-            _selectedResolition = Convert.ToInt32(selected.Content);
+            _selectedResolition = Convert.ToUInt32(selected.Content);
 
             if (_squareTexture && this.ResolutionPickerHeight != null)
             {
@@ -628,7 +651,7 @@ namespace TextureMagic
         private void ResolutionPickerHeight_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selected = (ComboBoxItem)this.ResolutionPickerHeight.SelectedValue;
-            _selectedResolutionHeight = Convert.ToInt32(selected.Content);
+            _selectedResolutionHeight = Convert.ToUInt32(selected.Content);
         }
 
         private void TextureBorderComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -682,6 +705,49 @@ namespace TextureMagic
             base.OnClosing(e);
 
             Task.Run(() => SettingsStorage.Save(Settings));
+        }
+
+        private void TrimTextureCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _trimImage = true;
+            ToggleTextureBorderVisibility(true);
+        }
+
+        private void TrimTextureCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _trimImage = false;
+            ToggleTextureBorderVisibility(false);
+        }
+
+        private void ScaleTextureCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            _scaleImage = true;
+            ToggleResulutionPickerVisibility(true);
+        }
+
+        private void ScaleTextureCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _scaleImage = false;
+            ToggleResulutionPickerVisibility(false);
+        }
+
+        private void ToggleTextureBorderVisibility(bool isVisible)
+        {
+            var visible = isVisible ? Visibility.Visible : Visibility.Collapsed;
+            
+            TextureBorderText.Visibility = visible;
+            TextureBorderComboBox.Visibility = visible;
+        }
+
+        private void ToggleResulutionPickerVisibility(bool isVisible)
+        {
+            var visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
+            
+            ResolutionWidthText.Visibility = visibility;
+            ResolutionPicker.Visibility = visibility;
+            ResolutionHeightText.Visibility = visibility;
+            ResolutionPickerHeight.Visibility = visibility;
+            SquareCheckbox.Visibility = visibility;
         }
     }
 }

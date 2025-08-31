@@ -15,10 +15,10 @@
             <Button Name="FilePickerButton" Content="Select files..." HorizontalAlignment="Stretch" Click="Button_Click"/>
             <TextBlock Name="SelectedPath" Margin="0,0,0,8" >C:\Program Files</TextBlock>
             <TextBlock x:Name="FilesFound" Margin="0,0,0,8" >0 Files Found</TextBlock>
-            <CheckBox x:Name="ExportDdsFromYtd" IsChecked="False" Visibility="Collapsed" HorizontalAlignment="Left" Content="Export DDS" Margin="0,0,0,8" Checked="ExportDds_Checked" Unchecked="ExportDds_Unchecked" />
+            <CheckBox x:Name="ExportDdsFromYtd" IsChecked="True" Visibility="Collapsed" HorizontalAlignment="Left" Content="Export DDS" Margin="0,0,0,8" Checked="ExportDds_Checked" Unchecked="ExportDds_Unchecked" />
             
             <StackPanel Orientation="Horizontal" >
-                <CheckBox x:Name="FillBackgroundCheckBox" IsChecked="True" HorizontalAlignment="Left"
+                <CheckBox x:Name="FillBackgroundCheckBox" IsChecked="False" HorizontalAlignment="Left"
                           Content="Fill background with color" Margin="0,0,8,8"
                           Checked="FillBackgroundCheckBox_Checked" Unchecked="FillBackgroundCheckBox_Unchecked" />
                 
@@ -28,25 +28,32 @@
             </StackPanel>
             
             
-            <TextBlock Name="TextureBorderText" Margin="0,0,0,0" >Texture Border:</TextBlock>
-            <ComboBox x:Name="TextureBorderComboBox" SelectedIndex="0" HorizontalAlignment="Stretch" Margin="0,0,0,8" SelectionChanged="TextureBorderComboBox_SelectionChanged" Background="#FF202020">
+           
+            <!-- <CheckBox x:Name="RearrangeTextureCheckbox" HorizontalAlignment="Left" Content="Rearrange Texture: optimize space" Margin="0,0,0,8" Unchecked="RearrangeCheckbox_Unchecked" Checked="RearrangeCheckbox_Checked" /> -->
+            <CheckBox x:Name="Trim" IsChecked="False" HorizontalAlignment="Left" Content="Trim Image..." Margin="0,0,0,8" Checked="TrimTextureCheckBox_Checked" Unchecked="TrimTextureCheckBox_Unchecked" />
+            
+            <!-- Only visible if trim is selected -->
+            <TextBlock Name="TextureBorderText" Margin="0,0,0,0" Visibility="Collapsed" >Texture Border:</TextBlock>
+            <ComboBox x:Name="TextureBorderComboBox" SelectedIndex="0" Visibility="Collapsed" HorizontalAlignment="Stretch" Margin="0,0,0,8" SelectionChanged="TextureBorderComboBox_SelectionChanged" Background="#FF202020">
                 <ComboBoxItem Content="0 Pixels" x:Name="x0"></ComboBoxItem>
                 <ComboBoxItem Content="8 Pixels" x:Name="x8"></ComboBoxItem>
                 <ComboBoxItem Content="32 Pixels" x:Name="x32"></ComboBoxItem>
                 <ComboBoxItem Content="64 Pixels" x:Name="x64"></ComboBoxItem>
             </ComboBox>
-            <!-- <CheckBox x:Name="RearrangeTextureCheckbox" HorizontalAlignment="Left" Content="Rearrange Texture: optimize space" Margin="0,0,0,8" Unchecked="RearrangeCheckbox_Unchecked" Checked="RearrangeCheckbox_Checked" /> -->
-            <CheckBox x:Name="SquareCheckbox" IsChecked="True" HorizontalAlignment="Left" Content="Square Texture" Margin="0,0,0,8" Checked="SquareTextureCheckBox_Checked" Unchecked="SquareTextureCheckBox_Unchecked" />
-
-            <TextBlock Name="ResolutionWidthText" Margin="0,0,0,0" >Width:</TextBlock>
-            <ComboBox SelectedIndex="1" HorizontalAlignment="Stretch" Name="ResolutionPicker" Margin="0,0,0,8" SelectionChanged="ResolutionPicker_SelectionChanged" Background="#FF202020">
+            
+            <CheckBox x:Name="Scale" IsChecked="False" HorizontalAlignment="Left" Content="Scale Image..." Margin="0,0,0,8" Checked="ScaleTextureCheckBox_Checked" Unchecked="ScaleTextureCheckBox_Unchecked" />
+            
+            <!-- Only visible if scale is selected -->
+            <CheckBox x:Name="SquareCheckbox" Visibility="Collapsed" IsChecked="False" HorizontalAlignment="Left" Content="Square Texture" Margin="0,0,0,8" Checked="SquareTextureCheckBox_Checked" Unchecked="SquareTextureCheckBox_Unchecked" />
+            <TextBlock Name="ResolutionWidthText" Margin="0,0,0,0" Visibility="Collapsed">Width:</TextBlock>
+            <ComboBox SelectedIndex="1" HorizontalAlignment="Stretch" Name="ResolutionPicker" Visibility="Collapsed" Margin="0,0,0,8" SelectionChanged="ResolutionPicker_SelectionChanged" Background="#FF202020">
                 <ComboBoxItem Content="512" x:Name="x512"></ComboBoxItem>
                 <ComboBoxItem Content="1024" x:Name="x1024"></ComboBoxItem>
                 <ComboBoxItem Content="2048" x:Name="x2048"></ComboBoxItem>
             </ComboBox>
 
-            <TextBlock Name="ResolutionHeightText" Margin="0,0,0,0" >Height:</TextBlock>
-            <ComboBox SelectedIndex="1" IsEnabled="False" HorizontalAlignment="Stretch" Name="ResolutionPickerHeight" Margin="0,0,0,16" SelectionChanged="ResolutionPickerHeight_SelectionChanged" Background="#FF202020">
+            <TextBlock Name="ResolutionHeightText" Margin="0,0,0,0" Visibility="Collapsed" >Height:</TextBlock>
+            <ComboBox SelectedIndex="1" IsEnabled="False" HorizontalAlignment="Stretch" Visibility="Collapsed" Name="ResolutionPickerHeight" Margin="0,0,0,16" SelectionChanged="ResolutionPickerHeight_SelectionChanged" Background="#FF202020">
                 <ComboBoxItem Content="512" x:Name="x512h"></ComboBoxItem>
                 <ComboBoxItem Content="1024" x:Name="x1024h"></ComboBoxItem>
                 <ComboBoxItem Content="2048" x:Name="x2048h"></ComboBoxItem>
